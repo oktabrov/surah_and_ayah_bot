@@ -1,9 +1,18 @@
 import requests         
 import json
+def is_lower(surah: int, stop: int) -> bool:
+    if not 0<surah<115:
+        raise OverflowError("Invalid number: Surah must be between 1 and 114")
+    url = f"https://api.alquran.cloud/v1/surah/{surah}/en.asad"
+    response = requests.get(url)
+    max_ayah_number = json.loads(response.text)["data"]["numberOfAyahs"]
+    if stop > max_ayah_number:
+        raise ValueError(f"Invalid Range: Ayah range can be from 1 to {max_ayah_number} at most")
+    return True
 def get_user_info(surah: int, ayah: int | None = ' ') -> bool:
     '''Takes information from the user and checks it'''
     if not 0<surah<115:
-        raise OverflowError(f"Invalid number: Surah must be between 1 and 114")
+        raise OverflowError("Invalid number: Surah must be between 1 and 114")
     url = f"https://api.alquran.cloud/v1/surah/{surah}/en.asad"
     response = requests.get(url)
     max_ayah_number = json.loads(response.text)["data"]["numberOfAyahs"]
@@ -50,7 +59,7 @@ def display_results(list_of_data):
 <b>ENGLISH:</b>
 <blockquote>{list_of_data[1].strip('"').strip("'")}</blockquote>
 
-{'ADDITIONAL INFO'.center(50, '-')}
+{'ADDITIONAL INFO'.center(40, '-')}
 <b>Ayah's position in Qur'an:</b> <code>{list_of_data[2]}</code>'''
     return formatted_info
 # Main function which takes suitable data from various functions and gives appropriate arguments to other functions
