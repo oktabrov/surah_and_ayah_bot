@@ -6,6 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 import asyncio
 import json
+import re
 bot = Bot('8564471713:AAGytjx1ueh4nlH-r1g421U_LLMJ8sseKbU') # 8564471713:AAGytjx1ueh4nlH-r1g421U_LLMJ8sseKbU
 router = Router()
 dp = Dispatcher()
@@ -22,6 +23,12 @@ class Wizard(StatesGroup):
     step1 = State()
     step2 = State()
     step3 = State()
+class Wizard2(StatesGroup):
+    step1 = State()
+    step2 = State()
+def escape_md2(text: str) -> str:
+    return re.sub(r'([_*\[\]()~`>#+\-=|{}.!])', r'\\\1', text)
+# -------------------------------------------------------------- START
 @router.message(Command('start'))
 async def start(msg):
     if msg.chat.id not in my_dict:
@@ -29,6 +36,31 @@ async def start(msg):
         await data2(my_dict)
     await data2(my_dict)
     await bot.send_message(msg.chat.id, "Assalomu alekum!\nSend me the Surah and Ayah number in either like 94:5 or 94:5-6")
+# -------------------------------------------------------------- GET INFO
+@router.message(Command('i'))
+async def get_info(msg: Message, state: FSMContext):
+    await msg.answer("Send me the ID")
+    await state.set_state(Wizard2.step1)
+@router.message(Wizard2.step1)
+async def next_step3(msg: Message, state: FSMContext):
+    if msg.text == '/exit':
+        await state.clear()
+        await msg.answer("Now you are out!")
+        return
+    ID = msg.text
+    if msg.text.isdigit() or (msg.text[0] == '-' and msg.text[1:].isdigit()):
+        ID = int(ID)
+        chat = await bot.get_chat(ID)
+        first_name = chat.first_name
+        username = chat.username
+        text = f"Username: {"@" if username else ""}{username}\nFirst name: {first_name}\nLast name: {chat.last_name}"
+        try:
+            kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Click here", url=f"tg://user?id={ID}")]])
+            await msg.answer(text, reply_markup=kb)
+        except:
+            await msg.answer(text)
+    await state.clear()
+# -------------------------------------------------------------- SEND
 @router.message(Command('send'))
 async def send_f(msg: Message, state: FSMContext):
     await msg.answer("Send me an ID or /all")
@@ -67,6 +99,7 @@ async def next_send2(msg: Message, state: FSMContext):
         await bot.send_message(int(ID), msg.text)
         await msg.answer("Successfully sent!")
     await state.clear()
+# -------------------------------------------------------------- SWITCH
 @router.message(Command('switch'))
 async def more_info(msg: Message):
     try:
@@ -75,6 +108,7 @@ async def more_info(msg: Message):
         await msg.reply("Switched")
     except Exception as e:
         await msg.answer(str(e))
+# -------------------------------------------------------------- ECHO
 @router.message(lambda msg: msg.content_type == 'text')
 async def echo(msg: Message):
     if not msg.chat.id in my_dict:
@@ -115,6 +149,7 @@ async def echo(msg: Message):
                 await msg.reply("Error: you must enter only digits ❗️")
     elif ':' in msg.text and len(msg.text) < 20:
         await msg.answer("Wrong format ❗️\nPlease use one of these formats only: <i>Surah:Ayah</i> (e.g: 94:5) or <i>Surah:Ayah-Ayah</i> (e.g: 94:5-6)", parse_mode = "HTML")
+# -------------------------------------------------------------- CALLBACK
 @router.callback_query()
 async def hi_callback(call: CallbackQuery):
     if ' ' in call.data and call.data.split()[-1] == 'more':
